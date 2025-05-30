@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clothica – Modern Clothes for You</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-white text-gray-900">
+
+<!-- Hero -->
+<section class="relative bg-gray-100 py-20">
+    <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center gap-12">
+        <div class="flex-1">
+            <h1 class="text-5xl font-extrabold mb-6">Redefine Your Wardrobe</h1>
+            <p class="text-xl mb-8 text-gray-600">Curated styles. Unmatched quality. Modern clothing for men and women
+                who think forward.</p>
+            <a href="#products"
+               class="inline-block bg-black text-white px-8 py-3 rounded-2xl text-lg font-bold shadow-lg hover:bg-gray-900 transition">Shop
+                Now</a>
+        </div>
+        <div class="flex-1 flex justify-center">
+            <img src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=500&q=80"
+                 alt="Fashion Model" class="rounded-2xl shadow-2xl w-96 object-cover">
+        </div>
+    </div>
+</section>
+
+<!-- Features -->
+<section class="max-w-6xl mx-auto px-4 py-12 grid md:grid-cols-3 gap-8">
+    <div class="bg-gray-50 p-8 rounded-2xl shadow text-center">
+        <div class="mb-4 text-3xl">🚚</div>
+        <h3 class="font-bold text-lg mb-2">Fast Free Shipping</h3>
+        <p class="text-gray-600">Get your orders delivered fast, always free above $50.</p>
+    </div>
+    <div class="bg-gray-50 p-8 rounded-2xl shadow text-center">
+        <div class="mb-4 text-3xl">♻️</div>
+        <h3 class="font-bold text-lg mb-2">Sustainable Fabrics</h3>
+        <p class="text-gray-600">We only use eco friendly materials and ethical labor.</p>
+    </div>
+    <div class="bg-gray-50 p-8 rounded-2xl shadow text-center">
+        <div class="mb-4 text-3xl">✅</div>
+        <h3 class="font-bold text-lg mb-2">30 Day Guarantee</h3>
+        <p class="text-gray-600">Return anything. No hassle. No hidden terms.</p>
+    </div>
+</section>
+
+<!-- Products -->
+<section id="products" class="max-w-6xl mx-auto px-4 py-16">
+    <h2 class="text-3xl font-bold mb-8">Best Sellers</h2>
+    <div class="grid gap-10 md:grid-cols-3">
+        <!-- Product 1 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 flex flex-col">
+            <img src="https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=400&q=80"
+                 alt="T-Shirt" class="rounded-xl mb-4 object-cover h-60">
+            <h3 class="font-bold text-lg mb-2">Classic White Tee</h3>
+            <p class="text-gray-600 mb-2">Organic cotton. Timeless fit. Minimalist.</p>
+            <span class="font-bold text-xl mb-4">$29</span>
+            <a href="#"
+               class="mt-auto inline-block bg-black text-white px-5 py-2 rounded-xl text-base font-semibold hover:bg-gray-900 transition">Add
+                to Cart</a>
+        </div>
+        <!-- Product 2 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 flex flex-col">
+            <img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=400&q=80"
+                 alt="Denim Jacket" class="rounded-xl mb-4 object-cover h-60">
+            <h3 class="font-bold text-lg mb-2">Denim Jacket</h3>
+            <p class="text-gray-600 mb-2">Heavyweight denim. Relaxed fit. All-season essential.</p>
+            <span class="font-bold text-xl mb-4">$69</span>
+            <a href="#"
+               class="mt-auto inline-block bg-black text-white px-5 py-2 rounded-xl text-base font-semibold hover:bg-gray-900 transition">Add
+                to Cart</a>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-gray-900 text-gray-100 py-8">
+    <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="font-bold text-lg">Clothica</div>
+        <div class="flex gap-6 text-gray-400 text-sm">
+            <a href="#" class="hover:text-white">Contact</a>
+            <a href="#" class="hover:text-white">Shipping & Returns</a>
+            <a href="#" class="hover:text-white">Instagram</a>
+        </div>
+        <div class="text-gray-500 text-sm">&copy; 2025 Clothica. All rights reserved.</div>
+    </div>
+</footer>
+<script>
+    window.AGO = {
+        basepath: "http://localhost:5173/",
+        widgetApiKey: "widget-api-key",
+        defaultAgent: "customer-service",
+        email: "test@test.com",
+        title: "AGO Chatbot",
+        prompt: "Hello, how can I help you today?",
+        colors: {
+            button: "#ff0000",
+        }
+    }
+</script>
+<script async src="./frame.js"></script>
+</body>
+</html>
