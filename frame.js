@@ -39,10 +39,21 @@ const styles = `
   justify-content: center;
   left: calc(100vw - 68px);
   padding: 12px;
-  position: fixed;
+  position: fixed !important;
   transition: all 0.2s ease;
   width: 48px;
   z-index: 2100000001;
+  /* Prevent iOS Safari from moving the button during scroll */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  /* Additional positioning fixes for mobile */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  will-change: transform;
+  /* Isolate from website layout changes */
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  contain: layout style paint !important;
 }
 #ago-chat-button svg {
   fill: #ffffff;
@@ -58,12 +69,18 @@ const styles = `
 @media (max-width: 450px) {
   #ago-chatbot {
     border-radius: 0;
-    bottom: unset;
-    height: 100vh;
+    bottom: 0;
+    height: 100vh; /* Fallback for older browsers */
+    height: 100dvh;
     left: 0;
-    right: unset;
+    right: 0;
     top: 0;
-    width: 100vw;
+    width: 100vw; /* Fallback for older browsers */
+    width: 100dvw;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
   }
   #ago-chatbot.closed {
     height: 0px;
@@ -74,8 +91,21 @@ const styles = `
   #ago-chat-button:not(.closed) {
     display: none;
   }
+  /* Fix for iOS Safari scroll behavior */
+  body.ago-chat-open {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
 }
 `;
+
+// Utility function to check if device is mobile
+const isMobileDevice = () => window.matchMedia("(max-width: 450px)").matches;
+
+// Store scroll position for mobile
+let scrollPosition = 0;
 
 const toggleFrame = (shouldClose) => {
     const chatbot = document.querySelector("#ago-chatbot");
@@ -88,20 +118,47 @@ const toggleFrame = (shouldClose) => {
             // Closing
             chatbot.classList.add("closed");
             button.classList.add("closed");
+            
+            // Restore scroll on mobile
+            if (isMobileDevice()) {
+                document.body.classList.remove("ago-chat-open");
+                document.body.style.top = "";
+                window.scrollTo(0, scrollPosition);
+            }
         } else {
             // Opening
             chatbot.classList.remove("closed");
             button.classList.remove("closed");
 
-            // Focus the iframe for keyboard events
-            const iframe = chatbot.querySelector("#ago-iframe");
-            if (chatbot) {
-                iframe.focus();
+            // Prevent body scroll on mobile
+            if (isMobileDevice()) {
+                scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+                document.body.style.top = `-${scrollPosition}px`;
+                document.body.classList.add("ago-chat-open");
+            } else {
+                // Focus the iframe for keyboard events - but not on mobile
+                const iframe = chatbot.querySelector("#ago-iframe");
+                if (iframe) {
+                    iframe.focus();
+                }
             }
         }
-
-        //updateButtonIcon(button, isClosed);
     }
+};
+
+// Cleanup function for event listeners
+let eventListeners = [];
+
+const addEventListenerWithCleanup = (element, event, handler) => {
+    element.addEventListener(event, handler);
+    eventListeners.push({ element, event, handler });
+};
+
+const cleanupEventListeners = () => {
+    eventListeners.forEach(({ element, event, handler }) => {
+        element.removeEventListener(event, handler);
+    });
+    eventListeners = [];
 };
 
 const createIFrame = () => {
@@ -149,7 +206,7 @@ const createIFrame = () => {
     svg.appendChild(close);
     button.appendChild(svg);
 
-    button.addEventListener("click", () => {
+    addEventListenerWithCleanup(button, "click", () => {
         toggleFrame();
     });
 
@@ -173,20 +230,59 @@ const createIFrame = () => {
         }
     };
 
-    isMobile.addEventListener("change", function () {
+    const sendInitMessages = () => {
         sendMobileState();
-    });
-    sendMobileState();
+        
+        iframe.contentWindow.postMessage(
+            {
+                type: "INIT_CHAT",
+                title: window.AGO.title || "AGO Chatbot",
+                prompt: window.AGO.prompt || "Hello, how can I help you today?",
+                colors: window.AGO.colors || {},
+            },
+            "*"
+        );
+    };
 
-    iframe.contentWindow.postMessage(
-        {
-            type: "INIT_CHAT",
-            title: window.AGO.title || "AGO Chatbot",
-            prompt: window.AGO.prompt || "Hello, how can I help you today?",
-            colors: window.AGO.colors || {},
-        },
-        "*"
-    );
+    // Wait for iframe to load before sending messages
+    addEventListenerWithCleanup(iframe, "load", () => {
+        // Small delay to ensure the React app is ready
+        setTimeout(sendInitMessages, 100);
+    });
+
+    addEventListenerWithCleanup(isMobile, "change", function () {
+        sendMobileState();
+
+        // Handle mobile state changes (orientation changes, etc.)
+        const chatbot = document.querySelector("#ago-chatbot");
+        const isOpen = chatbot && !chatbot.classList.contains("closed");
+
+        if (isOpen) {
+            if (isMobile.matches) {
+                // Switched to mobile - apply mobile scroll prevention
+                scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+                document.body.style.top = `-${scrollPosition}px`;
+                document.body.classList.add("ago-chat-open");
+            } else {
+                // Switched to desktop - remove mobile scroll prevention
+                document.body.classList.remove("ago-chat-open");
+                document.body.style.top = "";
+                window.scrollTo(0, scrollPosition);
+            }
+        }
+    });
+
+    // Handle viewport size changes (including virtual keyboard on mobile)
+    let resizeTimeout;
+    const handleResize = () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            // Update mobile state in case viewport changed
+            sendMobileState();
+        }, 150);
+    };
+    
+    addEventListenerWithCleanup(window, "orientationchange", handleResize);
 
     if (window.AGO.colors && window.AGO.colors.button) {
         const button = document.querySelector("#ago-chat-button");
@@ -196,12 +292,16 @@ const createIFrame = () => {
     }
 
     // Listen for messages from iframe
-    window.addEventListener("message", (event) => {
+    const messageHandler = (event) => {
         if (event.data.type === "CLOSE_CHAT") {
             toggleFrame(true);
         }
-    });
+    };
+    addEventListenerWithCleanup(window, "message", messageHandler);
 };
+
+// Cleanup on page unload
+addEventListenerWithCleanup(window, "beforeunload", cleanupEventListeners);
 
 if (document.body) {
     createIFrame();
