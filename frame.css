@@ -32,7 +32,7 @@
   border-radius: 50%;
   top:calc(100vh - 68px);
   top:calc(100dvh - 68px);
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(123, 123, 123, 0.3);  cursor: pointer;
   display: flex;
   height: 48px;
   justify-content: center;
