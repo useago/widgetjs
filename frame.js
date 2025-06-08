@@ -75,10 +75,8 @@ const createIFrame = () => {
   const iframe = document.createElement("iframe");
   iframe.setAttribute("id", "ago-iframe");
   iframe.setAttribute("title", "AGO chatbot");
-  iframe.setAttribute(
-    "src",
-    window.AGO.basepath + "embed/?widgetApiKey=" + window.AGO.widgetApiKey
-  );
+  const email = window.AGO.email ?? "";
+  iframe.setAttribute("src", window.AGO.basepath + "embed/?widgetApiKey=" + window.AGO.widgetApiKey + "&email=" + encodeURIComponent(email));
   iframe.setAttribute("tabindex", "0");
 
   chatbot.appendChild(iframe);
