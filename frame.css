@@ -33,13 +33,13 @@
   bottom: 20px;
   box-shadow: 0 4px 12px rgba(123, 123, 123, 0.3);  cursor: pointer;
   display: flex;
-  height: 48px;
+  height: 54px;
   justify-content: center;
   padding: 12px;
   position: fixed !important;
   right: 20px;
   transition: scale 0.2s ease;
-  width: 48px;
+  width: 54px;
   z-index: 2100000001;
   /* Prevent iOS Safari from moving the button during scroll */
   -webkit-transform: translateZ(0);
@@ -64,6 +64,78 @@
   box-shadow: 0 6px 16px rgba(123, 123, 123, 0.4);
   scale: 1.1;
 }
+
+@keyframes scale-in {
+  50% {
+    transform: translateX(-10px) translateY(-5px) scale(1.1);
+  }
+}
+@keyframes appear {
+  0% {
+    opacity: 0;
+  }
+  98% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+#ago-prompt{
+  animation: scale-in 800ms;
+  bottom: 80px;
+  font-family: Arial, Helvetica, sans-serif;
+  position: absolute;
+  right: 20px;
+  text-align: right;
+  z-index: 2100000000;
+}
+
+#ago-prompt button{
+  animation: appear 1000ms ease-in;
+  background: #fff;
+  border: 1px solid #efefef;
+  border-radius: 50%;
+  box-shadow: rgba(15, 15, 15, 0.16) 0px 5px 40px 0px;
+  color: #333;
+  cursor: pointer;
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  left: 5px;
+  padding: 3px 5px;
+  position: relative;
+  top: 15px;
+  z-index: 2100000001;
+}
+
+#ago-prompt p{
+  background-color: #fff;
+  border-radius: 16px;
+  box-shadow: rgba(15, 15, 15, 0.16) 0px 5px 40px 0px;
+  color: #333;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  padding: 20px;
+  position: relative;
+}
+
+#ago-prompt p::after{
+  content:"";
+  position: absolute;
+  bottom:-7px;
+  right:20px;
+  margin:auto;
+  height: 16px;
+  width: 16px;
+  border:1px solid #fff;
+  transform:rotate(45deg);
+  background-color: #fff;
+}
+
 @media (max-width: 450px) {
   #ago-chatbot {
     border-radius: 0;

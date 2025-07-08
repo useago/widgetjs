@@ -34,6 +34,7 @@ const toggleFrame = (shouldClose) => {
             }
         } else {
             // Opening
+            removePrompt();
             chatbot.classList.remove("closed");
             button.classList.remove("closed");
 
@@ -75,7 +76,7 @@ const createButton = () => {
 
     const styletag = document.createElement("link");
     styletag.setAttribute("rel", "stylesheet");
-    styletag.setAttribute("href", "https://useago.github.io/widgetjs/frame.css");
+    styletag.setAttribute("href", "./frame.css");
     document.head.appendChild(styletag);
 
     const button = document.createElement("button");
@@ -115,6 +116,44 @@ const createButton = () => {
     }
 };
 
+const createPrompt = () => {
+    const wrapper = document.querySelector("#ago-wrapper");
+
+    const prompt = document.createElement("div");
+    prompt.setAttribute("id", "ago-prompt");
+    const close = document.createElement("button");
+    close.setAttribute("id", "ago-prompt-close");
+    close.textContent = "X";
+    close.addEventListener(
+        "click",
+        () => {
+            removePrompt();
+        },
+        {once: true}
+    );
+    prompt.appendChild(close);
+    const promptText = document.createElement("p");
+    promptText.textContent =
+        window.AGO.prompt || "Hello, how can I help you today?";
+    prompt.appendChild(promptText);
+
+    // Add click event to open the widget when prompt is clicked (but not when close button is clicked)
+    prompt.addEventListener("click", (e) => {
+        if (e.target !== close) {
+            toggleFrame();
+        }
+    });
+
+    wrapper.prepend(prompt);
+};
+
+const removePrompt = () => {
+    const prompt = document.querySelector("#ago-prompt");
+    if (prompt) {
+        prompt.remove();
+    }
+};
+
 const createChatInterface = () => {
     isChatLoaded = true;
 
@@ -128,9 +167,15 @@ const createChatInterface = () => {
     iframe.setAttribute("id", "ago-iframe");
     iframe.setAttribute("title", "AGO chatbot");
     const email = window.AGO.email ?? "";
-    iframe.setAttribute("src", window.AGO.basepath + "embed/?widgetApiKey=" + window.AGO.widgetApiKey + "&email=" + encodeURIComponent(email));
+    iframe.setAttribute(
+        "src",
+        window.AGO.basepath +
+        "embed/?widgetApiKey=" +
+        window.AGO.widgetApiKey +
+        "&email=" +
+        encodeURIComponent(email)
+    );
     iframe.setAttribute("tabindex", "0");
-
     chatbot.appendChild(iframe);
     wrapper.appendChild(chatbot);
 
@@ -231,6 +276,10 @@ addEventListenerWithCleanup(window, "beforeunload", cleanupEventListeners);
 
 if (document.body) {
     createButton();
+
+    setTimeout(() => {
+        createPrompt();
+    }, 1000);
 } else {
     document.addEventListener("DOMContentLoaded", () => {
         createButton();
