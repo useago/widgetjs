@@ -76,7 +76,7 @@ const createButton = () => {
 
     const styletag = document.createElement("link");
     styletag.setAttribute("rel", "stylesheet");
-    styletag.setAttribute("href", "./frame.css");
+    styletag.setAttribute("href", "https://useago.github.io/widgetjs/frame.css");
     document.head.appendChild(styletag);
 
     const button = document.createElement("button");
