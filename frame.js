@@ -285,3 +285,16 @@ if (document.body) {
         createButton();
     });
 }
+
+function sendMetadataToAGO(metadata) {
+    const iframe = document.querySelector('#ago-iframe');
+    if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({
+            type: 'SET_METADATA',
+            data: metadata
+        }, '*');
+        console.log('[AGO] SET_METADATA message sent to iframe');
+    } else {
+        console.warn('[AGO] Failed to send SET_METADATA: iframe not ready');
+    }
+}
