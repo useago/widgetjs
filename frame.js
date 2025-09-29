@@ -207,6 +207,11 @@ const createChatInterface = () => {
             },
             "*"
         );
+
+        // Send JWT if provided in the AGO configuration
+        if (window.AGO.jwt) {
+            sendJwtToAGO(window.AGO.jwt);
+        }
     };
 
     // Wait for iframe to load before sending messages
@@ -296,5 +301,18 @@ function sendMetadataToAGO(metadata) {
         console.log('[AGO] SET_METADATA message sent to iframe');
     } else {
         console.warn('[AGO] Failed to send SET_METADATA: iframe not ready');
+    }
+}
+
+function sendJwtToAGO(jwt) {
+    const iframe = document.querySelector('#ago-iframe');
+    if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({
+            type: 'SET_JWT',
+            jwt: jwt
+        }, '*');
+        console.log('[AGO] SET_JWT message sent to iframe');
+    } else {
+        console.warn('[AGO] Failed to send SET_JWT: iframe not ready');
     }
 }
