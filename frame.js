@@ -82,26 +82,39 @@ const createButton = () => {
     const button = document.createElement("button");
     button.setAttribute("id", "ago-chat-button");
     button.classList.add("closed");
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-    svg.setAttribute("height", "48");
-    svg.setAttribute("width", "48");
-    svg.setAttribute("viewBox", "0 -960 960 960");
-    const open = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    open.setAttribute(
-        "d",
-        "M240-400h480v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM880-80 720-240H160q-33 0-56.5-23.5T80-320v-480q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v720ZM160-320h594l46 45v-525H160v480Zm0 0v-480 480Z"
-    );
-    open.setAttribute("id", "open-path");
-    svg.appendChild(open);
-    const close = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    close.setAttribute(
-        "d",
-        "M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"
-    );
-    close.setAttribute("id", "close-path");
-    svg.appendChild(close);
-    button.appendChild(svg);
+
+    // Check if custom icon URL is provided
+    if (window.AGO.icon) {
+        const img = document.createElement("img");
+        img.setAttribute("src", window.AGO.icon);
+        img.setAttribute("alt", "Chat");
+        img.style.width = "32px";
+        img.style.height = "32px";
+        img.style.objectFit = "contain";
+        button.appendChild(img);
+    } else {
+        // Use default SVG icon
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+        svg.setAttribute("height", "48");
+        svg.setAttribute("width", "48");
+        svg.setAttribute("viewBox", "0 -960 960 960");
+        const open = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        open.setAttribute(
+            "d",
+            "M240-400h480v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM880-80 720-240H160q-33 0-56.5-23.5T80-320v-480q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v720ZM160-320h594l46 45v-525H160v480Zm0 0v-480 480Z"
+        );
+        open.setAttribute("id", "open-path");
+        svg.appendChild(open);
+        const close = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        close.setAttribute(
+            "d",
+            "M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"
+        );
+        close.setAttribute("id", "close-path");
+        svg.appendChild(close);
+        button.appendChild(svg);
+    }
 
     addEventListenerWithCleanup(button, "click", () => {
         toggleFrame();
