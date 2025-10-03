@@ -70,6 +70,16 @@ const cleanupEventListeners = () => {
     eventListeners = [];
 };
 
+const createClosePath = () => {
+    const close = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    close.setAttribute(
+        "d",
+        "M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"
+    );
+    close.setAttribute("id", "close-path");
+    return close;
+};
+
 const createButton = () => {
     const wrapper = document.createElement("div");
     wrapper.setAttribute("id", "ago-wrapper");
@@ -91,7 +101,16 @@ const createButton = () => {
         img.style.width = "32px";
         img.style.height = "32px";
         img.style.objectFit = "contain";
+        img.setAttribute("id", "open-path");
         button.appendChild(img);
+
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+        svg.setAttribute("height", "48");
+        svg.setAttribute("width", "48");
+        svg.setAttribute("viewBox", "0 -960 960 960");
+        svg.appendChild(createClosePath());
+        button.appendChild(svg);
     } else {
         // Use default SVG icon
         const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -106,13 +125,7 @@ const createButton = () => {
         );
         open.setAttribute("id", "open-path");
         svg.appendChild(open);
-        const close = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        close.setAttribute(
-            "d",
-            "M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"
-        );
-        close.setAttribute("id", "close-path");
-        svg.appendChild(close);
+        svg.appendChild(createClosePath());
         button.appendChild(svg);
     }
 
