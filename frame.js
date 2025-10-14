@@ -230,6 +230,7 @@ const createChatInterface = () => {
                 title: window.AGO.title || "AGO Chatbot",
                 prompt: window.AGO.prompt || "Hello, how can I help you today?",
                 colors: window.AGO.colors || {},
+                hideFooter: window.AGO.hideFooter || false,
             },
             "*"
         );
