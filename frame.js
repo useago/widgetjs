@@ -224,6 +224,7 @@ const createChatInterface = () => {
     const sendInitMessages = () => {
         sendMobileState();
 
+        // Send INIT_CHAT with all configuration including JWT
         iframe.contentWindow.postMessage(
             {
                 type: "INIT_CHAT",
@@ -231,14 +232,10 @@ const createChatInterface = () => {
                 prompt: window.AGO.prompt || "Hello, how can I help you today?",
                 colors: window.AGO.colors || {},
                 hideFooter: window.AGO.hideFooter || false,
+                jwt: window.AGO.jwt || null, // Include JWT in INIT_CHAT message
             },
             "*"
         );
-
-        // Send JWT if provided in the AGO configuration
-        if (window.AGO.jwt) {
-            sendJwtToAGO(window.AGO.jwt);
-        }
     };
 
     // Wait for iframe to load before sending messages
