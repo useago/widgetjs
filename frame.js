@@ -224,7 +224,7 @@ const createChatInterface = () => {
     const sendInitMessages = () => {
         sendMobileState();
 
-        // Send INIT_CHAT with all configuration including JWT
+        // Send INIT_CHAT with all configuration including JWT, authToken and permission
         iframe.contentWindow.postMessage(
             {
                 type: "INIT_CHAT",
@@ -233,6 +233,8 @@ const createChatInterface = () => {
                 colors: window.AGO.colors || {},
                 hideFooter: window.AGO.hideFooter || false,
                 jwt: window.AGO.jwt || null, // Include JWT in INIT_CHAT message
+                authToken: window.AGO.authToken || null, // Include authToken for forwarding to external APIs
+                permission: window.AGO.permission || null, // Include permission override in INIT_CHAT message
             },
             "*"
         );
@@ -338,5 +340,18 @@ function sendJwtToAGO(jwt) {
         console.log('[AGO] SET_JWT message sent to iframe');
     } else {
         console.warn('[AGO] Failed to send SET_JWT: iframe not ready');
+    }
+}
+
+function sendAuthTokenToAGO(authToken) {
+    const iframe = document.querySelector('#ago-iframe');
+    if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({
+            type: 'SET_AUTH_TOKEN',
+            authToken: authToken
+        }, '*');
+        console.log('[AGO] SET_AUTH_TOKEN message sent to iframe');
+    } else {
+        console.warn('[AGO] Failed to send SET_AUTH_TOKEN: iframe not ready');
     }
 }
