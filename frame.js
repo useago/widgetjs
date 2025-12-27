@@ -331,6 +331,7 @@ function sendMetadataToAGO(metadata) {
 }
 
 function sendJwtToAGO(jwt) {
+    window.AGO.jwt = jwt;
     const iframe = document.querySelector('#ago-iframe');
     if (iframe && iframe.contentWindow) {
         iframe.contentWindow.postMessage({
@@ -344,6 +345,7 @@ function sendJwtToAGO(jwt) {
 }
 
 function sendAuthTokenToAGO(authToken) {
+    window.AGO.authToken = authToken;
     const iframe = document.querySelector('#ago-iframe');
     if (iframe && iframe.contentWindow) {
         iframe.contentWindow.postMessage({
