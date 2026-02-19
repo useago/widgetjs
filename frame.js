@@ -8,6 +8,13 @@ let scrollPosition = 0;
 let isChatLoaded = false;
 let isFirstClick = true;
 
+const sendToNotificationFrame = (message) => {
+    const frame = document.querySelector("#ago-notification-frame");
+    if (frame && frame.contentWindow) {
+        frame.contentWindow.postMessage(message, "*");
+    }
+};
+
 const toggleFrame = (shouldClose) => {
     // If this is the first click and chat interface hasn't been loaded yet
     if (isFirstClick && !isChatLoaded) {
@@ -26,6 +33,13 @@ const toggleFrame = (shouldClose) => {
             chatbot.classList.add("closed");
             button.classList.add("closed");
 
+            // Reset so notification reappears on next poll
+            lastDismissedCount = 0;
+
+            // Resume notification polling and trigger an immediate check
+            sendToNotificationFrame({type: "RESUME_NOTIFICATION_POLL"});
+            sendToNotificationFrame({type: "POLL_NOW"});
+
             // Restore scroll on mobile
             if (isMobileDevice()) {
                 document.body.classList.remove("ago-chat-open");
@@ -37,6 +51,9 @@ const toggleFrame = (shouldClose) => {
             removePrompt();
             chatbot.classList.remove("closed");
             button.classList.remove("closed");
+
+            // Pause notification polling while widget is open
+            sendToNotificationFrame({type: "PAUSE_NOTIFICATION_POLL"});
 
             // Prevent body scroll on mobile
             if (isMobileDevice()) {
@@ -143,6 +160,9 @@ const createButton = () => {
 };
 
 const createPrompt = () => {
+    // Don't overwrite a notification prompt that arrived first
+    if (document.querySelector("#ago-prompt")) return;
+
     const wrapper = document.querySelector("#ago-wrapper");
 
     const prompt = document.createElement("div");
@@ -178,6 +198,66 @@ const removePrompt = () => {
     if (prompt) {
         prompt.remove();
     }
+};
+
+let lastDismissedCount = 0;
+
+const showNotificationPrompt = (count) => {
+    // Remove any existing prompt (welcome or notification)
+    removePrompt();
+
+    const chatbot = document.querySelector("#ago-chatbot");
+    const isClosed = !chatbot || chatbot.classList.contains("closed");
+    if (!isClosed || count <= 0) return;
+
+    // Don't re-show if user dismissed this exact count
+    if (count <= lastDismissedCount) return;
+
+    const wrapper = document.querySelector("#ago-wrapper");
+    if (!wrapper) return;
+
+    const template = window.AGO.notificationMessage || "You have {{count}} new message(s)";
+    const text = template.replace("{{count}}", String(count));
+
+    const prompt = document.createElement("div");
+    prompt.setAttribute("id", "ago-prompt");
+
+    const close = document.createElement("button");
+    close.textContent = "\u2715";
+    close.addEventListener("click", (e) => {
+        e.stopPropagation();
+        lastDismissedCount = count;
+        removePrompt();
+    }, {once: true});
+
+    const dot = document.createElement("span");
+    dot.setAttribute("id", "ago-notification-dot");
+
+    const p = document.createElement("p");
+    p.appendChild(dot);
+    p.appendChild(document.createTextNode(text));
+
+    prompt.appendChild(close);
+    prompt.appendChild(p);
+
+    prompt.addEventListener("click", (e) => {
+        if (e.target !== close) toggleFrame();
+    });
+
+    wrapper.prepend(prompt);
+};
+
+const createNotificationFrame = () => {
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("id", "ago-notification-frame");
+    iframe.style.display = "none";
+    iframe.setAttribute("src",
+        window.AGO.basepath + "embed/notification-frame/"
+        + "?widgetApiKey=" + encodeURIComponent(window.AGO.widgetApiKey)
+        + "&email=" + encodeURIComponent(window.AGO.email || "")
+        + "&jwt=" + encodeURIComponent(window.AGO.jwt || "")
+    );
+    document.body.appendChild(iframe);
 };
 
 const createChatInterface = () => {
@@ -302,6 +382,13 @@ const createChatInterface = () => {
     }, 100);
 };
 
+// Listen for unread staff message count from notification iframe
+addEventListenerWithCleanup(window, "message", (event) => {
+    if (event.data && event.data.type === "UNREAD_STAFF_COUNT") {
+        showNotificationPrompt(event.data.count);
+    }
+});
+
 // Cleanup on page unload
 addEventListenerWithCleanup(window, "beforeunload", cleanupEventListeners);
 
@@ -311,9 +398,17 @@ if (document.body) {
     setTimeout(() => {
         createPrompt();
     }, 1000);
+
+    if (window.AGO.notifications) {
+        createNotificationFrame();
+    }
 } else {
     document.addEventListener("DOMContentLoaded", () => {
         createButton();
+
+        if (window.AGO.notifications) {
+            createNotificationFrame();
+        }
     });
 }
 
@@ -341,6 +436,14 @@ function sendJwtToAGO(jwt) {
         console.log('[AGO] SET_JWT message sent to iframe');
     } else {
         console.warn('[AGO] Failed to send SET_JWT: iframe not ready');
+    }
+    // Also update the notification iframe
+    const notifIframe = document.querySelector('#ago-notification-frame');
+    if (notifIframe && notifIframe.contentWindow) {
+        notifIframe.contentWindow.postMessage({
+            type: 'UPDATE_NOTIFICATION_JWT',
+            jwt: jwt
+        }, '*');
     }
 }
 
