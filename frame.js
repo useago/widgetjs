@@ -7,6 +7,7 @@ let scrollPosition = 0;
 // State tracking for lazy loading
 let isChatLoaded = false;
 let isFirstClick = true;
+let lastUnreadConversationId = null;
 
 const sendToNotificationFrame = (message) => {
     const frame = document.querySelector("#ago-notification-frame");
@@ -315,6 +316,7 @@ const createChatInterface = () => {
                 jwt: window.AGO.jwt || null, // Include JWT in INIT_CHAT message
                 authToken: window.AGO.authToken || null, // Include authToken for forwarding to external APIs
                 permission: window.AGO.permission || null, // Include permission override in INIT_CHAT message
+                lastUnreadConversationId: lastUnreadConversationId, // Forward unread conversation from notification frame
             },
             "*"
         );
@@ -385,6 +387,7 @@ const createChatInterface = () => {
 // Listen for unread staff message count from notification iframe
 addEventListenerWithCleanup(window, "message", (event) => {
     if (event.data && event.data.type === "UNREAD_STAFF_COUNT") {
+        lastUnreadConversationId = event.data.lastUnreadConversationId || null;
         showNotificationPrompt(event.data.count);
     }
 });
