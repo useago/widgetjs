@@ -451,7 +451,7 @@ function sendJwtToAGO(jwt) {
 }
 
 function sendAuthTokenToAGO(authToken) {
-    if (!authToken) {
+    if (!authToken || authToken === 'undefined' || authToken === 'null') {
         console.warn('[AGO] sendAuthTokenToAGO called with empty authToken, ignoring');
         return;
     }
