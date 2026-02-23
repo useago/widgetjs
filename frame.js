@@ -451,6 +451,10 @@ function sendJwtToAGO(jwt) {
 }
 
 function sendAuthTokenToAGO(authToken) {
+    if (!authToken) {
+        console.warn('[AGO] sendAuthTokenToAGO called with empty authToken, ignoring');
+        return;
+    }
     window.AGO.authToken = authToken;
     const iframe = document.querySelector('#ago-iframe');
     if (iframe && iframe.contentWindow) {
