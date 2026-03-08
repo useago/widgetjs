@@ -4,6 +4,21 @@ const isMobileDevice = () => window.matchMedia("(max-width: 450px)").matches;
 // Store scroll position for mobile
 let scrollPosition = 0;
 
+// Derive the target origin from the configured basepath
+const getTargetOrigin = () => {
+    try {
+        return new URL(window.AGO.basepath).origin;
+    } catch {
+        return window.location.origin;
+    }
+};
+
+// Validate that an incoming message origin is trusted
+const isTrustedOrigin = (origin) => {
+    const targetOrigin = getTargetOrigin();
+    return origin === targetOrigin;
+};
+
 // State tracking for lazy loading
 let isChatLoaded = false;
 let isFirstClick = true;
@@ -12,7 +27,7 @@ let lastUnreadConversationId = null;
 const sendToNotificationFrame = (message) => {
     const frame = document.querySelector("#ago-notification-frame");
     if (frame && frame.contentWindow) {
-        frame.contentWindow.postMessage(message, "*");
+        frame.contentWindow.postMessage(message, getTargetOrigin());
     }
 };
 
@@ -297,7 +312,7 @@ const createChatInterface = () => {
                     type: "MOBILE_STATE",
                     isMobile: isMobile.matches,
                 },
-                "*"
+                getTargetOrigin()
             );
         }
     };
@@ -318,7 +333,7 @@ const createChatInterface = () => {
                 permission: window.AGO.permission || null, // Include permission override in INIT_CHAT message
                 lastUnreadConversationId: lastUnreadConversationId, // Forward unread conversation from notification frame
             },
-            "*"
+            getTargetOrigin()
         );
     };
 
@@ -372,6 +387,7 @@ const createChatInterface = () => {
 
     // Listen for messages from iframe
     const messageHandler = (event) => {
+        if (!isTrustedOrigin(event.origin)) return;
         if (event.data.type === "CLOSE_CHAT") {
             toggleFrame(true);
         }
@@ -386,6 +402,7 @@ const createChatInterface = () => {
 
 // Listen for unread staff message count from notification iframe
 addEventListenerWithCleanup(window, "message", (event) => {
+    if (!isTrustedOrigin(event.origin)) return;
     if (event.data && event.data.type === "UNREAD_STAFF_COUNT") {
         lastUnreadConversationId = event.data.lastUnreadConversationId || null;
         showNotificationPrompt(event.data.count);
@@ -421,7 +438,7 @@ function sendMetadataToAGO(metadata) {
         iframe.contentWindow.postMessage({
             type: 'SET_METADATA',
             data: metadata
-        }, '*');
+        }, getTargetOrigin());
         console.log('[AGO] SET_METADATA message sent to iframe');
     } else {
         console.warn('[AGO] Failed to send SET_METADATA: iframe not ready');
@@ -435,7 +452,7 @@ function sendJwtToAGO(jwt) {
         iframe.contentWindow.postMessage({
             type: 'SET_JWT',
             jwt: jwt
-        }, '*');
+        }, getTargetOrigin());
         console.log('[AGO] SET_JWT message sent to iframe');
     } else {
         console.warn('[AGO] Failed to send SET_JWT: iframe not ready');
@@ -446,7 +463,7 @@ function sendJwtToAGO(jwt) {
         notifIframe.contentWindow.postMessage({
             type: 'UPDATE_NOTIFICATION_JWT',
             jwt: jwt
-        }, '*');
+        }, getTargetOrigin());
     }
 }
 
@@ -461,7 +478,7 @@ function sendAuthTokenToAGO(authToken) {
         iframe.contentWindow.postMessage({
             type: 'SET_AUTH_TOKEN',
             authToken: authToken
-        }, '*');
+        }, getTargetOrigin());
         console.log('[AGO] SET_AUTH_TOKEN message sent to iframe');
     } else {
         console.warn('[AGO] Failed to send SET_AUTH_TOKEN: iframe not ready');
