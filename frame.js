@@ -267,11 +267,13 @@ const createNotificationFrame = () => {
     const iframe = document.createElement("iframe");
     iframe.setAttribute("id", "ago-notification-frame");
     iframe.style.display = "none";
+    const notifParams = [];
+    if (window.AGO.widgetApiKey) notifParams.push("widgetApiKey=" + encodeURIComponent(window.AGO.widgetApiKey));
+    if (window.AGO.email) notifParams.push("email=" + encodeURIComponent(window.AGO.email));
+    if (window.AGO.jwt) notifParams.push("jwt=" + encodeURIComponent(window.AGO.jwt));
     iframe.setAttribute("src",
         window.AGO.basepath + "embed/notification-frame/"
-        + "?widgetApiKey=" + encodeURIComponent(window.AGO.widgetApiKey)
-        + "&email=" + encodeURIComponent(window.AGO.email || "")
-        + "&jwt=" + encodeURIComponent(window.AGO.jwt || "")
+        + (notifParams.length ? "?" + notifParams.join("&") : "")
     );
     document.body.appendChild(iframe);
 };
@@ -288,14 +290,13 @@ const createChatInterface = () => {
     const iframe = document.createElement("iframe");
     iframe.setAttribute("id", "ago-iframe");
     iframe.setAttribute("title", "AGO chatbot");
-    const email = window.AGO.email ?? "";
+    const chatParams = [];
+    if (window.AGO.widgetApiKey) chatParams.push("widgetApiKey=" + encodeURIComponent(window.AGO.widgetApiKey));
+    if (window.AGO.email) chatParams.push("email=" + encodeURIComponent(window.AGO.email));
     iframe.setAttribute(
         "src",
-        window.AGO.basepath +
-        "embed/?widgetApiKey=" +
-        window.AGO.widgetApiKey +
-        "&email=" +
-        encodeURIComponent(email)
+        window.AGO.basepath + "embed/"
+        + (chatParams.length ? "?" + chatParams.join("&") : "")
     );
     iframe.setAttribute("tabindex", "0");
     chatbot.appendChild(iframe);
@@ -331,6 +332,7 @@ const createChatInterface = () => {
                 jwt: window.AGO.jwt || null, // Include JWT in INIT_CHAT message
                 authToken: window.AGO.authToken || null, // Include authToken for forwarding to external APIs
                 permission: window.AGO.permission || null, // Include permission override in INIT_CHAT message
+                defaultAgent: window.AGO.defaultAgent || null, // Include default agent slug/id
                 lastUnreadConversationId: lastUnreadConversationId, // Forward unread conversation from notification frame
             },
             getTargetOrigin()
