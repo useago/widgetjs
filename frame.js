@@ -337,6 +337,10 @@ const createChatInterface = () => {
             },
             getTargetOrigin()
         );
+
+        if (window.AGO.metadata && typeof window.AGO.metadata === "object") {
+            sendMetadataToAGO(window.AGO.metadata);
+        }
     };
 
     // Wait for iframe to load before sending messages
