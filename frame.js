@@ -68,6 +68,12 @@ const toggleFrame = (shouldClose) => {
             chatbot.classList.remove("closed");
             button.classList.remove("closed");
 
+            // Re-sync metadata in case the host updated window.AGO.metadata
+            // while the widget was closed (e.g. user context change).
+            if (window.AGO.metadata && typeof window.AGO.metadata === "object") {
+                sendMetadataToAGO(window.AGO.metadata);
+            }
+
             // Pause notification polling while widget is open
             sendToNotificationFrame({type: "PAUSE_NOTIFICATION_POLL"});
 
@@ -439,6 +445,9 @@ if (document.body) {
 }
 
 function sendMetadataToAGO(metadata) {
+    // Remember the latest value so the re-sync on reopen (see toggleFrame)
+    // picks it up even if the integrator called sendMetadataToAGO live.
+    window.AGO.metadata = metadata;
     const iframe = document.querySelector('#ago-iframe');
     if (iframe && iframe.contentWindow) {
         iframe.contentWindow.postMessage({
