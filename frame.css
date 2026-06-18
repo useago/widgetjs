@@ -11,7 +11,7 @@
     right: 20px;
     transform-origin: right bottom;
     visibility: visible;
-    width: min(400px, 100% - 40px);
+    width: min(550px, 100% - 40px);
     z-index: 2100000000;
 }
 
