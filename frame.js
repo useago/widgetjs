@@ -1,3 +1,24 @@
+// Resolve the URL this script was loaded from, so sibling assets (frame.css)
+// load from the same origin. Locally this picks up ./frame.css; in production
+// it resolves to the CDN copy next to frame.js. Falls back to the CDN.
+// Captured at load time: document.currentScript is only set during the
+// script's initial synchronous execution, not inside later callbacks.
+const agoCurrentScript = document.currentScript;
+const getStylesheetHref = () => {
+    const fallback = "https://useago.github.io/widgetjs/frame.css";
+    try {
+        const self =
+            agoCurrentScript ||
+            document.querySelector('script[src$="frame.js"]');
+        if (self && self.src) {
+            return self.src.replace(/frame\.js(\?.*)?$/, "frame.css");
+        }
+    } catch {
+        // ignore and fall back
+    }
+    return fallback;
+};
+
 // Utility function to check if device is mobile
 const isMobileDevice = () => window.matchMedia("(max-width: 450px)").matches;
 
@@ -125,7 +146,7 @@ const createButton = () => {
 
     const styletag = document.createElement("link");
     styletag.setAttribute("rel", "stylesheet");
-    styletag.setAttribute("href", "https://useago.github.io/widgetjs/frame.css");
+    styletag.setAttribute("href", getStylesheetHref());
     document.head.appendChild(styletag);
 
     const button = document.createElement("button");
@@ -338,7 +359,7 @@ const createChatInterface = () => {
                 jwt: window.AGO.jwt || null, // Include JWT in INIT_CHAT message
                 authToken: window.AGO.authToken || null, // Include authToken for forwarding to external APIs
                 permission: window.AGO.permission || null, // Include permission override in INIT_CHAT message
-                defaultAgent: window.AGO.defaultAgent || null, // Include default agent slug/id
+                defaultAgent: window.AGO.agent || window.AGO.defaultAgent || null, // Include default agent slug/id (accepts `agent` shorthand)
                 lastUnreadConversationId: lastUnreadConversationId, // Forward unread conversation from notification frame
             },
             getTargetOrigin()

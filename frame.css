@@ -3,7 +3,7 @@
     bottom: 80px;
     box-shadow: rgba(15, 15, 15, 0.16) 0px 5px 40px 0px;
     display: block;
-    height: min(704px, 100% - 80px);
+    height: min(800px, 100% - 120px);
     opacity: 1;
     overflow: hidden;
     pointer-events: all;
@@ -11,7 +11,7 @@
     right: 20px;
     transform-origin: right bottom;
     visibility: visible;
-    width: min(704px, 100% - 40px);
+    width: min(400px, 100% - 40px);
     z-index: 2100000000;
 }
 
