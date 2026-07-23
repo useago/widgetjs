@@ -40,6 +40,62 @@ const isTrustedOrigin = (origin) => {
     return origin === targetOrigin;
 };
 
+// Gap between the top of the chat button and the prompt/panel above it,
+// and the max panel height (must match the 880px = 80px + 800px cap in
+// frame.css #ago-chatbot top rule).
+const BUTTON_GAP = 6;
+const MAX_PANEL_HEIGHT = 800;
+
+// Position the prompt bubble and chat panel relative to the button's actual
+// rendered position. Host pages move the button with `!important` overrides
+// (to clear their own cookie bars, scroll-to-top buttons, etc.); without this
+// the prompt/panel keep their stylesheet defaults and the button overlaps
+// them. Inline `!important` styles win over host stylesheet overrides, so the
+// derived position is authoritative on desktop; on mobile the stylesheet's
+// fullscreen layout stays in charge.
+const syncPositionsToButton = () => {
+    const button = document.querySelector("#ago-chat-button");
+    const targets = [
+        document.querySelector("#ago-prompt"),
+        document.querySelector("#ago-chatbot"),
+    ].filter(Boolean);
+    if (!button || targets.length === 0) return;
+
+    if (isMobileDevice()) {
+        targets.forEach((el) => {
+            el.style.removeProperty("bottom");
+            el.style.removeProperty("right");
+            el.style.removeProperty("top");
+        });
+        return;
+    }
+
+    // Read the button's used position from computed style, not
+    // getBoundingClientRect(): the rect includes the hover `scale: 1.1`
+    // transform, which would make the derived position jitter.
+    if (!button.offsetHeight) return; // hidden: keep stylesheet defaults
+    const buttonStyle = getComputedStyle(button);
+    const buttonBottom = parseFloat(buttonStyle.bottom);
+    const buttonRight = parseFloat(buttonStyle.right);
+    if (isNaN(buttonBottom) || isNaN(buttonRight)) return;
+
+    const bottom = Math.round(buttonBottom + button.offsetHeight) + BUTTON_GAP;
+    const right = Math.round(buttonRight);
+    targets.forEach((el) => {
+        el.style.setProperty("bottom", bottom + "px", "important");
+        el.style.setProperty("right", right + "px", "important");
+        if (el.id === "ago-chatbot") {
+            // Keep the panel capped at MAX_PANEL_HEIGHT while never letting
+            // its top edge get closer than 40px to the top of the viewport.
+            el.style.setProperty(
+                "top",
+                `max(40px, calc(100% - ${bottom + MAX_PANEL_HEIGHT}px))`,
+                "important"
+            );
+        }
+    });
+};
+
 // State tracking for lazy loading
 let isChatLoaded = false;
 let isFirstClick = true;
@@ -234,6 +290,7 @@ const createPrompt = () => {
     });
 
     wrapper.prepend(prompt);
+    syncPositionsToButton();
 };
 
 const removePrompt = () => {
@@ -288,6 +345,7 @@ const showNotificationPrompt = (count) => {
     });
 
     wrapper.prepend(prompt);
+    syncPositionsToButton();
 };
 
 const createNotificationFrame = () => {
@@ -328,6 +386,7 @@ const createChatInterface = () => {
     iframe.setAttribute("tabindex", "0");
     chatbot.appendChild(iframe);
     wrapper.appendChild(chatbot);
+    syncPositionsToButton();
 
     // Send messages to iframe
     const isMobile = window.matchMedia("(max-width: 450px)");
@@ -432,6 +491,15 @@ const createChatInterface = () => {
         toggleFrame();
     }, 100);
 };
+
+// Re-derive prompt/panel positions when the viewport changes: host pages may
+// move the button only above certain widths (media queries), and the mobile
+// fullscreen layout needs the inline overrides cleared.
+let syncPositionsTimeout;
+addEventListenerWithCleanup(window, "resize", () => {
+    clearTimeout(syncPositionsTimeout);
+    syncPositionsTimeout = setTimeout(syncPositionsToButton, 150);
+});
 
 // Listen for unread staff message count from notification iframe
 addEventListenerWithCleanup(window, "message", (event) => {
