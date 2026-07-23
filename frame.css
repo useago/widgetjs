@@ -3,12 +3,17 @@
     bottom: 80px;
     box-shadow: rgba(15, 15, 15, 0.16) 0px 5px 40px 0px;
     display: block;
-    height: min(800px, 100% - 120px);
+    /* Height comes from the top/bottom anchors (max 800px = 100% - 880px cap),
+       not a fixed height: host pages override `bottom` with !important to lift
+       the widget above their own cookie/sticky bars, and a fixed height would
+       push the panel past the top of the viewport. */
+    height: auto;
     opacity: 1;
     overflow: hidden;
     pointer-events: all;
     position: fixed;
     right: 20px;
+    top: max(40px, calc(100% - 880px));
     transform-origin: right bottom;
     visibility: visible;
     width: min(550px, 100% - 40px);
