@@ -577,15 +577,81 @@ const isUsableCredential = (value) =>
     && value !== 'undefined'
     && value !== 'null';
 
-// Auth tokens expire (Rails signed global ids, short-lived JWTs...). The host
-// can either reassign window.AGO.authToken / window.AGO.jwt, or expose a
-// provider — window.AGO.getAuthToken() / getJwt(), sync or async — that we call
-// whenever a fresh value is needed. Without this the widget keeps forwarding
-// whatever token the page happened to carry at load time, and the agent's API
-// calls start coming back empty once it expires.
+const AGO_TOKEN_SHIMS = [
+    {
+        name: "cautioneo",
+        match: (hostname) => hostname === "cautioneo.com" || hostname.endsWith(".cautioneo.com"),
+        read: () => {
+            const client = window.__APOLLO_CLIENT__;
+            if (!client || !client.cache || typeof client.cache.extract !== "function") return null;
+            const root = client.cache.extract().ROOT_QUERY;
+            if (!root) return null;
+
+            let best = null;
+            let bestExpiry = null;
+            for (const key of Object.keys(root)) {
+                if (!key.startsWith("node(")) continue;
+                const found = key.match(/"id":"([^"]+)"/);
+                if (!found) continue;
+                const expiry = signedGlobalIdExpiry(found[1]);
+                // Never swap in a token that is already dead: it would replace a
+                // stale token with an equally stale one and hide the problem.
+                if (!expiry || expiry <= new Date()) continue;
+                if (!bestExpiry || expiry > bestExpiry) {
+                    best = found[1];
+                    bestExpiry = expiry;
+                }
+            }
+            return best;
+        },
+    },
+];
+
+function signedGlobalIdExpiry(token) {
+    try {
+        const raw = atob(token.split("--")[0].replace(/-/g, "+").replace(/_/g, "/"));
+        if (!/gid:\/\/[^/]+\/User\//.test(raw)) return null;
+        const stamp = raw.match(/\d{4}-\d{2}-\d{2}T[\d:.]+Z/);
+        return stamp ? new Date(stamp[0]) : null;
+    } catch (error) {
+        return null;
+    }
+}
+
+
+let lastShimOutcome;
+
+function readHostAuthToken() {
+    let shim;
+    try {
+        shim = AGO_TOKEN_SHIMS.find((entry) => entry.match(location.hostname));
+    } catch (error) {
+        return null;
+    }
+    if (!shim) return null;
+
+    let token = null;
+    try {
+        token = shim.read();
+    } catch (error) {
+        // Host changed shape, or the visitor is logged out.
+        token = null;
+    }
+
+    const outcome = token ? "resolved" : "empty";
+    if (outcome !== lastShimOutcome) {
+        lastShimOutcome = outcome;
+        console.info(
+            token
+                ? `[AGO] host token shim '${shim.name}' resolved a token`
+                : `[AGO] host token shim '${shim.name}' found nothing, keeping window.AGO.authToken`
+        );
+    }
+    return token;
+}
+
+
 function refreshCredentials() {
-    // The chat iframe is created on first open; before that there is nobody to
-    // deliver to, and asking the host for a token would just log "not ready".
     if (!document.querySelector('#ago-iframe')) return;
     syncCredential('authToken', 'getAuthToken', sendAuthTokenToAGO);
     syncCredential('jwt', 'getJwt', sendJwtToAGO);
@@ -600,8 +666,9 @@ function syncCredential(configKey, providerKey, send) {
 
     const provider = window.AGO[providerKey];
     if (typeof provider !== 'function') {
-        // No provider: the host may still have reassigned the global directly.
-        push(window.AGO[configKey]);
+        // No provider: prefer a host shim that can re-read the live source,
+        // otherwise the global the host may have reassigned.
+        push((configKey === 'authToken' ? readHostAuthToken() : null) || window.AGO[configKey]);
         return;
     }
 
