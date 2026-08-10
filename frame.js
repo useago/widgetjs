@@ -151,6 +151,10 @@ const toggleFrame = (shouldClose) => {
                 sendMetadataToAGO(window.AGO.metadata);
             }
 
+            // Same for auth credentials: a tab left open past the token TTL
+            // would otherwise keep forwarding an expired token.
+            refreshCredentials();
+
             // Pause notification polling while widget is open
             sendToNotificationFrame({type: "PAUSE_NOTIFICATION_POLL"});
 
@@ -423,10 +427,17 @@ const createChatInterface = () => {
             },
             getTargetOrigin()
         );
+        lastSentCredentials.jwt = window.AGO.jwt || null;
+        lastSentCredentials.authToken = window.AGO.authToken || null;
 
         if (window.AGO.metadata && typeof window.AGO.metadata === "object") {
             sendMetadataToAGO(window.AGO.metadata);
         }
+
+        // Ask the host for fresh credentials. Deliberately after INIT_CHAT and
+        // not awaited: a slow getAuthToken() must not delay widget boot, and
+        // SET_AUTH_TOKEN arriving a moment later is idempotent.
+        refreshCredentials();
     };
 
     // Wait for iframe to load before sending messages
@@ -501,6 +512,12 @@ addEventListenerWithCleanup(window, "resize", () => {
     syncPositionsTimeout = setTimeout(syncPositionsToButton, 150);
 });
 
+// A tab left open overnight comes back with an expired token. Re-pull when it
+// regains focus, so the credential is fresh before the visitor types anything.
+addEventListenerWithCleanup(document, "visibilitychange", () => {
+    if (document.visibilityState === "visible") refreshCredentials();
+});
+
 // Listen for unread staff message count from notification iframe
 addEventListenerWithCleanup(window, "message", (event) => {
     if (!isTrustedOrigin(event.origin)) return;
@@ -549,8 +566,60 @@ function sendMetadataToAGO(metadata) {
     }
 }
 
+// Credentials already delivered to the iframe. Tracked separately from
+// window.AGO.* so a re-sync can tell "the host swapped the token" apart from
+// "nothing changed" and stay quiet in the second case.
+const lastSentCredentials = {jwt: null, authToken: null};
+
+const isUsableCredential = (value) =>
+    typeof value === 'string'
+    && value !== ''
+    && value !== 'undefined'
+    && value !== 'null';
+
+// Auth tokens expire (Rails signed global ids, short-lived JWTs...). The host
+// can either reassign window.AGO.authToken / window.AGO.jwt, or expose a
+// provider — window.AGO.getAuthToken() / getJwt(), sync or async — that we call
+// whenever a fresh value is needed. Without this the widget keeps forwarding
+// whatever token the page happened to carry at load time, and the agent's API
+// calls start coming back empty once it expires.
+function refreshCredentials() {
+    // The chat iframe is created on first open; before that there is nobody to
+    // deliver to, and asking the host for a token would just log "not ready".
+    if (!document.querySelector('#ago-iframe')) return;
+    syncCredential('authToken', 'getAuthToken', sendAuthTokenToAGO);
+    syncCredential('jwt', 'getJwt', sendJwtToAGO);
+}
+
+function syncCredential(configKey, providerKey, send) {
+    const push = (value) => {
+        if (!isUsableCredential(value)) return;
+        if (value === lastSentCredentials[configKey]) return; // nothing changed
+        send(value);
+    };
+
+    const provider = window.AGO[providerKey];
+    if (typeof provider !== 'function') {
+        // No provider: the host may still have reassigned the global directly.
+        push(window.AGO[configKey]);
+        return;
+    }
+
+    let result;
+    try {
+        result = provider();
+    } catch (error) {
+        console.warn(`[AGO] window.AGO.${providerKey}() threw, keeping the previous value`, error);
+        return;
+    }
+    Promise.resolve(result).then(push).catch((error) => {
+        console.warn(`[AGO] window.AGO.${providerKey}() rejected, keeping the previous value`, error);
+    });
+}
+
 function sendJwtToAGO(jwt) {
     window.AGO.jwt = jwt;
+    lastSentCredentials.jwt = jwt;
     const iframe = document.querySelector('#ago-iframe');
     if (iframe && iframe.contentWindow) {
         iframe.contentWindow.postMessage({
@@ -572,11 +641,12 @@ function sendJwtToAGO(jwt) {
 }
 
 function sendAuthTokenToAGO(authToken) {
-    if (!authToken || authToken === 'undefined' || authToken === 'null') {
+    if (!isUsableCredential(authToken)) {
         console.warn('[AGO] sendAuthTokenToAGO called with empty authToken, ignoring');
         return;
     }
     window.AGO.authToken = authToken;
+    lastSentCredentials.authToken = authToken;
     const iframe = document.querySelector('#ago-iframe');
     if (iframe && iframe.contentWindow) {
         iframe.contentWindow.postMessage({
