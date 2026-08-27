@@ -1,3 +1,12 @@
+/* Registered so an invalid host value falls back to 550px. Unregistered, it would
+   substitute into min()/max(), make `width` invalid at computed-value time, and
+   shrink-to-fit the fixed-position panel down to the iframe's intrinsic 300px. */
+@property --ago-panel-width {
+    syntax: "<length-percentage>";
+    inherits: true;
+    initial-value: 550px;
+}
+
 #ago-chatbot {
     border-radius: 16px;
     bottom: 80px;
@@ -16,7 +25,12 @@
     top: max(40px, calc(100% - 880px));
     transform-origin: right bottom;
     visibility: visible;
-    width: min(550px, 100% - 40px);
+    /* Below the 400px floor the composer toolbar starts wrapping. Note this sits
+       under the 450px mobile breakpoint, so a 400-450px panel on a desktop viewport
+       still receives the desktop layout (MOBILE_STATE tracks the host viewport, not
+       the panel). --ago-panel-max is rewritten from the launcher's position when a
+       host moves it, so a wide panel cannot be pushed off the left edge. */
+    width: min(max(400px, var(--ago-panel-width, 550px)), var(--ago-panel-max, 100% - 40px));
     z-index: 2100000000;
 }
 

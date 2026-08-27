@@ -22,6 +22,34 @@ const getStylesheetHref = () => {
 // Utility function to check if device is mobile
 const isMobileDevice = () => window.matchMedia("(max-width: 450px)").matches;
 
+const PANEL_WIDTH_PATTERN =
+    /^(?:\d+(?:\.\d+)?(?:px|rem|em|vw|vmin|vmax|%)|(?:min|max|clamp|calc)\([^;{}]+\))$/i;
+
+// CSS.supports on the bare value is not enough: `auto` passes on its own but makes
+// the composed min()/max() invalid, which is the case that collapses the panel.
+const isSupportedPanelWidth = (value) => {
+    if (!PANEL_WIDTH_PATTERN.test(value)) return false;
+    if (typeof CSS === "undefined" || !CSS.supports) return true;
+    return CSS.supports("width", `min(max(400px, ${value}), 100% - 40px)`);
+};
+
+const applyPanelWidth = () => {
+    const value = window.AGO && window.AGO.panelWidth;
+    if (value === undefined || value === null || value === "") return;
+    const normalized = typeof value === "number" ? `${value}px` : String(value).trim();
+    if (!isSupportedPanelWidth(normalized)) {
+        // Drop any previously applied value so the width the host sees always matches
+        // the warning, even when a valid value is later replaced with a bad one.
+        document.documentElement.style.removeProperty("--ago-panel-width");
+        console.warn(
+            `[AGO] window.AGO.panelWidth "${value}" is not a valid CSS length, ignoring. ` +
+                `Expected e.g. "700px" or "45rem". Falling back to 550px.`
+        );
+        return;
+    }
+    document.documentElement.style.setProperty("--ago-panel-width", normalized);
+};
+
 // Store scroll position for mobile
 let scrollPosition = 0;
 
@@ -66,6 +94,7 @@ const syncPositionsToButton = () => {
             el.style.removeProperty("bottom");
             el.style.removeProperty("right");
             el.style.removeProperty("top");
+            el.style.removeProperty("--ago-panel-max");
         });
         return;
     }
@@ -91,6 +120,12 @@ const syncPositionsToButton = () => {
                 "top",
                 `max(40px, calc(100% - ${bottom + MAX_PANEL_HEIGHT}px))`,
                 "important"
+            );
+            // The default width guard assumes right: 20px. A host that moves the
+            // launcher inward would otherwise push a wide panel off the left edge.
+            el.style.setProperty(
+                "--ago-panel-max",
+                `calc(100% - ${right + 20}px)`
             );
         }
     });
@@ -151,6 +186,10 @@ const toggleFrame = (shouldClose) => {
                 sendMetadataToAGO(window.AGO.metadata);
             }
 
+            // Same for panelWidth: a SPA host that resizes its own shell expects
+            // a reassignment to take effect on the next open, not only at boot.
+            applyPanelWidth();
+
             // Same for auth credentials: a tab left open past the token TTL
             // would otherwise keep forwarding an expired token.
             refreshCredentials();
@@ -208,6 +247,8 @@ const createButton = () => {
     styletag.setAttribute("rel", "stylesheet");
     styletag.setAttribute("href", getStylesheetHref());
     document.head.appendChild(styletag);
+
+    applyPanelWidth();
 
     const button = document.createElement("button");
     button.setAttribute("id", "ago-chat-button");
