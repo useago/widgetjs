@@ -420,6 +420,7 @@ const createChatInterface = () => {
     const iframe = document.createElement("iframe");
     iframe.setAttribute("id", "ago-iframe");
     iframe.setAttribute("title", "AGO chatbot");
+    iframe.setAttribute("allow", "microphone");
     const chatParams = [];
     if (window.AGO.widgetApiKey) chatParams.push("widgetApiKey=" + encodeURIComponent(window.AGO.widgetApiKey));
     if (window.AGO.email) chatParams.push("email=" + encodeURIComponent(window.AGO.email));
